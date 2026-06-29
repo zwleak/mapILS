@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mapILS | İnteraktif Havalimanı ILS & Pist Bilgi Haritası</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Dünya üzerindeki tüm havalimanlarının pist uzunlukları, ILS frekansları, localizer (LOC) dereceleri ve pist bilgilerini içeren interaktif harita platformu.">
+    <meta name="keywords" content="mapILS, ILS frequency, localizer course, runway length, aviation map, flight simulator, airport map">
+    <meta name="author" content="mapILS Team">
+    
+    <!-- Google Fonts - Space Grotesk (Headers) & Inter (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- App CSS stylesheet -->
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar Panel -->
+        <aside class="sidebar" id="sidebar" aria-label="Havalimanı Bilgileri">
+            <!-- Header section inside sidebar -->
+            <div class="sidebar-header">
+                <div class="brand">
+                    <i class="fa-solid fa-gauge-high brand-icon"></i>
+                    <h1>map<span>ILS</span></h1>
+                </div>
+                <p class="tagline">Havacılık Seyrüsefer & Pist Veritabanı</p>
+            </div>
+            
+            <!-- Dynamic Content Area -->
+            <div class="sidebar-content">
+                
+                <!-- Welcome/Initial State -->
+                <div class="panel-state active" id="welcome-state">
+                    <div class="welcome-box">
+                        <div class="welcome-icon">
+                            <i class="fa-solid fa-earth-americas"></i>
+                        </div>
+                        <h3>Haritayı Keşfedin</h3>
+                        <p>Dünya genelinde <strong>2,700+</strong> havalimanını incelemek için:</p>
+                        <ul class="welcome-instructions">
+                            <li><i class="fa-solid fa-location-crosshairs"></i> Haritada parıldayan havalimanı noktalarından birine tıklayın.</li>
+                            <li><i class="fa-solid fa-magnifying-glass"></i> Yukarıdaki arama kutusuna ICAO, IATA, isim veya şehir yazın.</li>
+                            <li><i class="fa-solid fa-radar"></i> Pist başlarındaki ILS/LOC frekanslarını, kurs derecelerini ve pist uzunluklarını anında görün.</li>
+                        </ul>
+                        <div class="welcome-footer">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span>Bu veriler yalnızca uçuş simülasyonu (flight simulation) amaçlıdır. Gerçek havacılıkta kullanılamaz.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detail State -->
+                <div class="panel-state" id="details-state">
+                    <!-- Main Airport Info Card -->
+                    <div class="airport-card">
+                        <div class="airport-main">
+                            <div class="airport-codes">
+                                <span class="badge-icao" id="info-icao">KJFK</span>
+                                <span class="badge-iata" id="info-iata">JFK</span>
+                            </div>
+                            <button class="btn-fly" id="btn-fly-to" title="Havalimanına Odaklan">
+                                <i class="fa-solid fa-plane-departure"></i>
+                            </button>
+                        </div>
+                        <h2 class="airport-name" id="info-name">John F Kennedy International Airport</h2>
+                        <div class="airport-meta">
+                            <div class="meta-item">
+                                <i class="fa-solid fa-city"></i>
+                                <span id="info-city">New York</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fa-solid fa-globe"></i>
+                                <span id="info-country">US</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fa-solid fa-arrow-up-right-dots"></i>
+                                <span id="info-elev">13 ft</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Runways & ILS list -->
+                    <div class="runways-section">
+                        <h3><i class="fa-solid fa-road"></i> Pistler ve Fesal Sistemler (ILS)</h3>
+                        <div id="runways-container" class="runways-list">
+                            <!-- Dynamic Runway Cards will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- Sidebar Footer Info -->
+            <div class="sidebar-footer">
+                <p>&copy; 2026 mapILS. Tüm hakları saklıdır.</p>
+                <p class="footer-credit">created by <span class="credit-name">renteas</span></p>
+            </div>
+        </aside>
+
+        <!-- Main Map and Controls Container -->
+        <main class="main-map-area" aria-label="İnteraktif Harita">
+            <!-- Search Floating Panel -->
+            <div class="search-panel">
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" autocomplete="off" placeholder="Havalimanı Ara (ICAO, IATA, İsim)..." aria-label="Havalimanı Arama Çubuğu">
+                    <button class="clear-search-btn" id="clear-search" style="display:none;" aria-label="Aramayı temizle">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <!-- Suggestions Dropdown -->
+                <div class="search-suggestions" id="search-suggestions" style="display: none;"></div>
+                
+                <!-- Airport Counter Badge -->
+                <div class="airport-counter" id="airport-counter-badge">
+                    <span class="count-dot"></span>
+                    <span id="loaded-count">Yükleniyor...</span>
+                </div>
+            </div>
+            
+            <!-- The Map container -->
+            <div id="map"></div>
+        </main>
+    </div>
+
+    <!-- Notification Toast for Copied Info -->
+    <div class="toast" id="copy-toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-message">Kopyalandı!</span>
+    </div>
+
+    <!-- Leaflet Map JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Application Logic JS -->
+    <script src="app.js"></script>
+</body>
+</html>
